@@ -839,12 +839,6 @@ Process.prototype.Buzzer = function (pin, value) {
             case '4':
                 pinValue = 11;
                 break;
-            case '5':
-                pinValue = 2;
-                break;
-            case '6':
-                pinValue = 8;
-                break;
             }
 
     if (sprite.arduino.isBoardReady()) {
