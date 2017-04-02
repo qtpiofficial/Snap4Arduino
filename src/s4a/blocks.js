@@ -49,6 +49,15 @@ SyntaxElementMorph.prototype.labelPart = function(spec) {
                     }
                     );
             break;
+        case '%UltrasoundPort':
+            part = new InputSlotMorph(
+                null,
+                false, {
+                    '5': 5,
+                    '6': 6,
+                }
+            );
+            break;
         case '%pwmPin':
             part = new InputSlotMorph(
                     null,
