@@ -67,7 +67,13 @@ SpriteMorph.prototype.initArduinoBlocks = function () {
         spec: 'set digital pin %digitalPin to %b',
         transpilable: true
     };
-
+    this.blocks.reportUltrasound = {
+        only: SpriteMorph,
+        type: 'command',
+        category: 'arduino',
+        spec: 'Read Ultrasound at Port %UltrasoundPort',
+        transpilable: true
+    };
     this.blocks.servoWrite =
     {
         only: SpriteMorph,
@@ -273,6 +279,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(reportAnalog);
         blocks.push(digitalToggle);
         blocks.push(reportDigital);
+	blocks.push(blockBySelector('reportUltrasound'));
 
     } else if (category === 'other') {
         button = new PushButtonMorph(
