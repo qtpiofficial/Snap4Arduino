@@ -71,6 +71,54 @@ Process.prototype.setPinMode = function (pin, mode) {
         throw new Error(localize('Arduino not connected'));	
     }
 };
+Process.prototype.reportUltrasound = function(pin) {
+
+    var sprite = this.homeContext.receiver;
+    var trigger;
+    var echo;
+    var duration, cm, i;
+    switch (pin[0]) {
+        case '5':
+            trigger = 2;
+            echo = 12;
+            break;
+        case '6':
+            trigger = 8;
+            echo = 13;
+            break;
+    }
+
+    this.popContext();
+    sprite.startWarp();
+    this.pushContext('doYield');
+
+    if (!this.isAtomic) {
+        this.pushContext('doStopWarping');
+    }
+    if (sprite.arduino.isBoardReady()) {
+        var board = sprite.arduino.board;
+        
+        if (board.pins[echo].mode != board.MODES.INPUT) {
+            board.pinMode(echo, board.MODES.INPUT);
+        }
+        var opts = {
+            pin: echo,
+            value: "",
+            pulseOut: 0,
+            timeout: 1000000
+        };
+        board.pulseIn(opts, function(value) {
+            board.pins[echo].value = value
+        });
+    } else {
+        throw new Error(localize('RIO not connected'));
+    }
+
+    this.isAtomic = true;
+
+    this.pushContext();
+
+};
 
 Process.prototype.servoWrite = function (pin, value) {
     var sprite = this.homeContext.receiver;
