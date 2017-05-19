@@ -1,25 +1,132 @@
+// Resize blocks and categories
+IDE_Morph.prototype.originalInit = IDE_Morph.prototype.init;
+IDE_Morph.prototype.init = function (isAutoFill) {
+    SyntaxElementMorph.prototype.setScale(1.5);
+    this.saveSetting('zoom', 1.5);
+    this.originalInit(isAutoFill);
+    this.isAnimating = false;
+};
+
+IDE_Morph.prototype.createCategories = function () {
+    var myself = this;
+
+    if (this.categories) {
+        this.categories.destroy();
+    }
+    this.categories = new Morph();
+    this.categories.color = this.groupColor;
+    this.categories.silentSetWidth(240 || this.logo.width()); // width is fixed
+
+    function addCategoryButton(category) {
+        var labelWidth = 75 * SyntaxElementMorph.prototype.scale,
+            colors = [
+                myself.frameColor,
+                myself.frameColor.darker(50),
+                SpriteMorph.prototype.blockColor[category]
+            ],
+            button;
+
+        button = new ToggleButtonMorph(
+                colors,
+                myself, // the IDE is the target
+                function () {
+                    myself.currentCategory = category;
+                    myself.categories.children.forEach(function (each) {
+                        each.refresh();
+                    });
+                    myself.refreshPalette(true);
+                },
+                category[0].toUpperCase().concat(category.slice(1)), // label
+                function () {  // query
+                    return myself.currentCategory === category;
+                },
+                null, // env
+                null, // hint
+                null, // template cache
+                labelWidth, // minWidth
+                true // has preview
+                );
+
+        button.fontSize *= SyntaxElementMorph.prototype.scale;
+
+        button.corner = 8;
+        button.padding = 0;
+        button.labelShadowOffset = new Point(-1, -1);
+        button.labelShadowColor = colors[1];
+        button.labelColor = myself.buttonLabelColor;
+        button.fixLayout();
+        button.refresh();
+        myself.categories.add(button);
+        return button;
+    }
+
+    function fixCategoriesLayout() {
+        var buttonWidth = myself.categories.children[0].width(),
+            buttonHeight = myself.categories.children[0].height(),
+            border = 3,
+            rows =  Math.ceil((myself.categories.children.length) / 2),
+            xPadding = (myself.categories.width()
+                    - border
+                    - buttonWidth * 2) / 3,
+            yPadding = 2,
+            l = myself.categories.left(),
+            t = myself.categories.top(),
+            i = 0,
+            row,
+            col;
+
+        myself.categories.children.forEach(function (button) {
+            i += 1;
+            row = Math.ceil(i / 2);
+            col = 2 - (i % 2);
+            button.setPosition(new Point(
+                l + (col * xPadding + ((col - 1) * buttonWidth)),
+                t + (row * yPadding + ((row - 1) * buttonHeight) + border)
+                )
+            );
+        });
+
+        myself.categories.setHeight(
+            (rows + 1) * yPadding
+            + rows * buttonHeight
+            + 2 * border
+            );
+    }
+
+    SpriteMorph.prototype.categories.forEach(function (cat) {
+        if (!contains(['lists'], cat)) {
+            addCategoryButton(cat);
+        }
+    });
+    fixCategoriesLayout();
+    this.add(this.categories);
+};
+
+// Garbage bin
 IDE_Morph.prototype.showGarbageBin = function () {
     if (!this.garbageBin) {
         ide.buildGarbageBin();
         ide.garbageBin.drawNew();
     }
+    this.palette.showOverlay();
     this.garbageBin.show();
-    this.garbageBin.setRight(this.stage.left() - 20);
+    this.garbageBin.setCenter(this.palette.center());
 };
 
 IDE_Morph.prototype.hideGarbageBin = function () {
     this.garbageBin.hide();
+    this.palette.hideOverlay();
 };
 
 IDE_Morph.prototype.buildGarbageBin = function () {
-    var myself = this;
+    var myself = this,
+        overlay = new Morph();
     this.garbageBin = new Morph();
     this.garbageBin.setExtent(new Point(60, 75));
-    this.garbageBin.setBottom(this.bottom() - 20);
-    this.garbageBin.setRight(this.stage.left() - 20);
+    this.garbageBin.setCenter(this.palette.center());
     this.garbageBin.isDraggable = false;
     this.garbageBin.acceptsDrops = false;
-    this.garbageBin.color = new Color(125, 112, 85, 0.6);
+    this.garbageBin.color = new Color(125, 112, 85);
 
     this.garbageBin.drawNew = function () {
         var w = this.width(),
@@ -51,33 +158,33 @@ IDE_Morph.prototype.buildGarbageBin = function () {
         }
     };
 
-    this.garbageBin.mouseEnterDragging = function () {
-        var myself = this,
-            hand = this.world().hand,
-            origin = hand.grabOrigin.position;
-        this.setColor(new Color(225, 212, 85, 0.6));
+    overlay.setColor(50, 50, 50);
+    overlay.setAlphaScaled(50);
+    overlay.setExtent(this.palette.extent());
+    overlay.setPosition(this.palette.position());
+    this.palette.add(overlay);
+    overlay.hide();
 
-        hand.processTouchEnd = function (event) {
-            var morph = this.children[0];
-            MorphicPreferences.isTouchDevice = true;
-            clearInterval(this.touchHoldTimeout);
-            if (morph instanceof BlockMorph
-                    && this.allMorphsAtPointer().indexOf(myself) > -1) {
-                hand.setPosition(origin);
-                hand.drop();
-                morph.destroy();
-            }
-            this.processMouseUp({button: 0});
-        };
+    this.palette.showOverlay = function () {
+        overlay.show();
     };
 
-    this.garbageBin.mouseLeave = function () {
-        this.setColor(new Color(125, 112, 85, 0.6));
+    this.palette.hideOverlay = function () {
+        overlay.hide();
     };
 
-    this.add(this.garbageBin);
+    this.palette.mouseEnterDragging = function () {
+        myself.garbageBin.setColor(new Color(225, 212, 85));
+    };
+
+    this.palette.mouseLeave = function () {
+        myself.garbageBin.setColor(new Color(125, 112, 85));
+    };
+
+    this.palette.add(this.garbageBin);
 };
 
+// Resize stage and palette
 IDE_Morph.prototype.shrinkStage = function () {
     this.toggleStageSize(true);
 };
@@ -88,7 +195,7 @@ IDE_Morph.prototype.shrinkPalette = function () {
 };
 
 IDE_Morph.prototype.growPalette = function () {
-    this.paletteWidth = 200;
+    this.paletteWidth = 240;
     this.setExtent(world.extent());
 };
 
@@ -194,3 +301,56 @@ PaletteHandleMorph.prototype.mouseClickLeft = function () {
 };
 
 PaletteHandleMorph.prototype.mouseDownLeft = PaletteHandleMorph.prototype.mouseClickLeft;
+
+// Cordova file operations
+
+IDE_Morph.prototype.fileImport = function () {
+    function readFile (fileEntry) {
+        fileEntry.file(
+            function (file) {
+                var reader = new FileReader();
+                reader.onload = function (e) { 
+                    var contents = e.target.result;
+                    ide.droppedText(contents);
+                };
+                reader.readAsText(file);
+            },
+            function (error) {
+                alert(error);
+            }
+        );
+    };
+
+    fileChooser.open(function (uri) {
+        window.resolveLocalFileSystemURL(uri, readFile); 
+    });
+};
+
+saveAs = function (contents, fileName, ignoreUntitled) {
+
+    if (!ignoreUntitled && fileName === localize('Untitled') + '.xml') {
+        window.prompt('Project Name', '', function (name) { saveAs(contents, name, true); });
+    }
+
+    window.resolveLocalFileSystemURL(cordova.file.externalRootDirectory, function (dirEntry) {
+        dirEntry.getFile(
+            fileName,
+            {
+                create: true,
+                exclusive: false
+            },
+            function (fileEntry) {
+                writeFile(fileEntry, new Blob([contents], { type: 'text/xml' }));
+            }
+        );
+    });
+
+    function writeFile (fileEntry, dataObj) {
+        fileEntry.createWriter(function (fileWriter) {
+            fileWriter.onerror = function (err) {
+                alert(err.toString());
+            };
+            fileWriter.write(dataObj);
+        });
+    };
+};

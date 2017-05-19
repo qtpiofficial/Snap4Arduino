@@ -557,35 +557,7 @@ IDE_Morph.prototype.projectMenu = function () {
     menu.addLine();
     menu.addItem(
         'Import...',
-        function () {
-            var inp = document.createElement('input');
-            if (myself.filePicker) {
-                document.body.removeChild(myself.filePicker);
-                myself.filePicker = null;
-            }
-            inp.type = 'file';
-            inp.style.color = "transparent";
-            inp.style.backgroundColor = "transparent";
-            inp.style.border = "none";
-            inp.style.outline = "none";
-            inp.style.position = "absolute";
-            inp.style.top = "0px";
-            inp.style.left = "0px";
-            inp.style.width = "0px";
-            inp.style.height = "0px";
-            inp.addEventListener(
-                "change",
-                function () {
-                    document.body.removeChild(inp);
-                    myself.filePicker = null;
-                    world.hand.processDrop(inp.files);
-                },
-                false
-            );
-            document.body.appendChild(inp);
-            myself.filePicker = inp;
-            inp.click();
-        },
+        'fileImport',
         'file menu import hint' // looks up the actual text in the translator
     );
 
@@ -709,6 +681,37 @@ IDE_Morph.prototype.projectMenu = function () {
     menu.popup(world, pos);
 };
 
+IDE_Morph.prototype.fileImport = function () {
+    var myself = this,
+        inp = document.createElement('input');
+    if (this.filePicker) {
+        document.body.removeChild(myself.filePicker);
+        this.filePicker = null;
+    }
+    inp.type = 'file';
+    inp.style.color = "transparent";
+    inp.style.backgroundColor = "transparent";
+    inp.style.border = "none";
+    inp.style.outline = "none";
+    inp.style.position = "absolute";
+    inp.style.top = "0px";
+    inp.style.left = "0px";
+    inp.style.width = "0px";
+    inp.style.height = "0px";
+    inp.addEventListener(
+            "change",
+            function () {
+                document.body.removeChild(inp);
+                myself.filePicker = null;
+                world.hand.processDrop(inp.files);
+            },
+            false
+            );
+    document.body.appendChild(inp);
+    this.filePicker = inp;
+    inp.click();
+};
+
 IDE_Morph.prototype.aboutSnap4Arduino = function () {
     var dlg, aboutTxt, creditsTxt, translations,
     module, aboutBtn, creditsBtn,
@@ -806,7 +809,6 @@ IDE_Morph.prototype.getCostumesList = function (dirname) {
 
 
 // Snap4Arduino logo
-
 IDE_Morph.prototype.createLogo = function () {
     var myself = this;
 
@@ -855,7 +857,6 @@ IDE_Morph.prototype.createLogo = function () {
 };
 
 // Exporting
-
 IDE_Morph.prototype.originalExportProject = IDE_Morph.prototype.exportProject;
 IDE_Morph.prototype.exportProject = function (name, plain) {
     var menu, 
@@ -882,7 +883,7 @@ IDE_Morph.prototype.exportProject = function (name, plain) {
     }
 };
 
-function saveFile(name, contents, extension, target) {
+function saveFile (name, contents, extension, target) {
     var inp = document.createElement('input');
     if (target.filePicker) {
         document.body.removeChild(target.filePicker);
@@ -1077,7 +1078,6 @@ IDE_Morph.prototype.showProjectUrl = function (projectName) {
 };
 
 // EXPERIMENTAL: Arduino translation mode
-
 IDE_Morph.prototype.createNewArduinoProject = function () {
     var myself = this;
     this.confirm(
